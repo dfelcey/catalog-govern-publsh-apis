@@ -1,0 +1,133 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Cataloging, Publishing and Governing APIs on AWS API Gateway</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid="{{labAnalytics}}"
+                  id="cataloging-publishing-and-governing-aws-gateway-apis"
+                  title="Cataloging, Publishing and Governing APIs on AWS API Gateway"
+                  environment="web"
+                  feedback-link="https://docs.google.com/forms/d/e/1FAIpQLScVaeTQSQ0FfBO_b2GPc47hiJIJTxQnl6FQAVubWtBD_FbGSg/viewform?usp=pp_url&amp;entry.530463766=cataloging-publishing-and-governing-aws-gateway-apis-for-lambdas">
+    
+      <google-codelab-step label="Overview" duration="2">
+        <p>This lab will walk you through how MuleSoft&#39;s Universal API Management can be used to complement the development of APIs deployed to the AWS API Gateway, for instance to access Lambda services. <br></p>
+<h2 is-upgraded>What you will learn</h2>
+<ul>
+<li>How the Anypoint API cataloging tool can be added to a CICD pipeline to update the AWS API Gateway, to automatically catalog the latest version of an API. Allowing API consumers to see a real-time view of what services are available and drive reuse<br></li>
+<li>How the Anypoint API Governance feature can be used to check API specifications, to make sure they meet security, industry, compliance and organizational standards. Driving consistency, reducing risk and making APIs easier to consume<br></li>
+<li>How Anypoint Exchange can reduce duplication, drive reuse and enable self service with an internal audience and through ACM to an external audience</li>
+</ul>
+<p>It will walk you through how to set up a simple CICD pipeline using GitHub and Jenkins, but this is only to show in principle how this can be done. It does not cover in-depth DevOps practices or all the additional steps that would be needed to productionize this process. Its focus is to show the &#34;art of the possible&#34;.</p>
+<p>Finally although this tutorial assumes the user is using Mac OSX, the scripts and instructions could easily be tweaked to run on Windows.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Prerequisites" duration="15">
+        <p class="image-container"><img style="width: 624.00px" src="img/e5e2ebcb758c614.png"></p>
+<p>These are the prerequisites required for the tutorial;</p>
+<ul>
+<li>An Anypoint environment (this could be a trial environment)<br></li>
+<li>A copy of the Anypoint API Catalog tool installed locally. Instructions can be found <a href="https://docs.mulesoft.com/exchange/apicat-install-api-catalog-cli" target="_blank">here</a>, but basically in involves installing a Node app;<br><br>        <code>npm install -g anypoint-cli@latest</code><br><br></li>
+<li>Access to an AWS account with permissions to create and update an API in the API Gateway. A free tier account should allow you to do this - but remember to remove what you need afterwards<br></li>
+<li>The AWS CLI installed locally. Details on how to do this can be found <a href="https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html" target="_blank">here</a>.<br></li>
+<li><a href="https://www.docker.com/products/docker-desktop/" target="_blank">Docker Desktop installed</a><br></li>
+<li>VSCode has been used for this tutorial but any text editor could be used<br></li>
+<li>The GitHub <a href="https://git-scm.com/download/mac" target="_blank">client installed locally</a> and a GitHub account<br></li>
+<li>Jenkins (this can be run locally). Details of how to do this can be found <a href="https://www.jenkins.io/doc/book/installing/war-file/" target="_blank">here</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Setup your project" duration="5">
+        <p>To setup your project for testing;</p>
+<p>Create a directory on your laptop and clone the GitHub project from <a href="https://github.com/dfelcey/aws-api-demo" target="_blank">here</a>;</p>
+<p><code>git clone </code><a href="https://github.com/dfelcey/aws-api-demo.git" target="_blank"><code>https://github.com/dfelcey/aws-api-demo.git</code></a></p>
+<p>In VSCode open the directory/folder you have just cloned the project to;</p>
+<p class="image-container"><img style="width: 624.00px" src="img/9bb619969da46e54.png"></p>
+<p>And then publish to GitHub (Ctrl + Shift + Command), (<em>Note: you may be asked to authenticate with GitHub if you have not already done so</em>). You can choose any project name you like, or just call it aws-api-demo;</p>
+<p class="image-container"><img style="width: 624.00px" src="img/8813cf1c7c12b272.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Setup your AWS environment" duration="5">
+        <p>To set up your AWS environment first check you have the AWS CLI installed. Enter <code>aws –version</code> and you should see something like this;</p>
+<p><code>% aws --version</code></p>
+<p><code>aws-cli/2.7.16 Python/3.9.11 Darwin/21.5.0 exe/x86_64 prompt/off</code></p>
+<p>To use the AWS CLI you need to set up your credentials. This is outlined <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-creds" target="_blank">here</a>, but basically if you login to the AWS console, select your account and the <em>Security Credential</em>s menu optio. To create new access keys click on <em>Create New Access Key</em></p>
+<p class="image-container"><img style="width: 624.00px" src="img/7df70a1bbab9fbe.png"></p>
+<p>Save the access credentials to use later as <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html" target="_blank">environment variables</a> and from the command line</p>
+<p>Run the aws configure command to add these to the AWS CLI credentials file as outline <a href="https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html" target="_blank">here</a>;</p>
+<p><code>aws configure</code></p>
+<p>Once this has been done you can then create the initial version of the API in the AWS API Gateway - the Jenkins CICD pipeline will just update this. To create the initial version of the API, make sure you are in the project directory/folder that contains the api.json API definition and run the commands below;</p>
+<p><code>AWS_PROFILE=default</code></p>
+<p><code>aws apigateway import-rest-api \</code></p>
+<p><code>    --parameters endpointConfigurationTypes=REGIONAL \</code></p>
+<p><code>    --cli-binary-format raw-in-base64-out \</code></p>
+<p><code>    --fail-on-warnings \</code></p>
+<p><code>    --body 'file://api.json'</code></p>
+<p>After running this command you should be able to see the API Gateway in the AWS console, similar to the screenshot below;</p>
+<p class="image-container"><img style="width: 624.00px" src="img/d304b517be655577.png"></p>
+<p>You are now ready to setup the Jenkins pipeline </p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Setup your Jenkins environment" duration="5">
+        <p>When writing up your code lab, you&#39;ll likely want to preview it before you deploy to the test environment. To do so, install this plugin: <a href="https://chrome.google.com/webstore/detail/preview-codelab/lhojjnijnkiglhkggagbapfonpdlinji" target="_blank">https://chrome.google.com/webstore/detail/preview-codelab/lhojjnijnkiglhkggagbapfonpdlinji</a></p>
+<p class="image-container"><img style="width: 624.00px" src="img/2323809e308a62c2.gif"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Markup" duration="0">
+        <h2 is-upgraded>(preview this template to see the markup in action)</h2>
+<p>When you want to put inline code, <code>use the Courier New font like this!</code></p>
+<p>If you want to include a code block, which has a copy button, create a 1x1 table and use the font Courier new:</p>
+<pre><code>//this is a code block
+%dw 2.0
+output application/json
+---
+&#34;Hello world!&#34;</code></pre>
+<p>If you want to add a warning block, add a 1x1 table with this background color (3 from the left, and 3 down in the color picker):</p>
+<aside class="warning"><p><strong>WARNING: </strong>If you see an issue with...</p>
+</aside>
+<p>If you want to do a green box, same thing but with this background color:</p>
+<aside class="special"><p><strong>Pro Tip: </strong>In Anypoint Studio 7.10 and beyond you can...</p>
+</aside>
+<p>If you want to include a button instead of a simple link, create a link and set the highlight with this green:</p>
+<p><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank"><paper-button class="colored" raised>This is a button - click me~!</paper-button></a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

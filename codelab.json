@@ -1,0 +1,31 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-07-27T11:26:49Z",
+  "id": "cataloging-publishing-and-governing-aws-gateway-apis",
+  "duration": 32,
+  "title": "Cataloging, Publishing and Governing APIs on AWS API Gateway",
+  "authors": "Dave Felcey",
+  "summary": "AWS is a popular platform for deploying microservices, but the APIs that provide access easily create problems around governance, duplication of effort etc. Key features of the Anypoint Platform can complement the benefits of the AWS platform, by addressing these customer challenges",
+  "source": "1rDIvPJIHuY0_QrgHw-Rzftc8dfwYxj6qAZ039E70icg",
+  "theme": "mulesoft",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "mulesoft",
+    "devops"
+  ],
+  "tags": [
+    "api",
+    "apigateway",
+    "aws",
+    "catalog",
+    "governance"
+  ],
+  "feedback": "https://docs.google.com/forms/d/e/1FAIpQLScVaeTQSQ0FfBO_b2GPc47hiJIJTxQnl6FQAVubWtBD_FbGSg/viewform?usp=pp_url\u0026entry.530463766=cataloging-publishing-and-governing-aws-gateway-apis-for-lambdas",
+  "ga": "{{labAnalytics}}",
+  "url": "cataloging-publishing-and-governing-aws-gateway-apis"
+}
